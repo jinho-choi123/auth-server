@@ -9,4 +9,4 @@ edition = "2021"
 actix-web = "4.2.1"
 chrono = "0.4.23"
 mongodb = "2.3.1"
-
+jsonwebtoken = "8.2.0"
