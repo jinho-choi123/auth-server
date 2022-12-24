@@ -30,7 +30,22 @@ pub async fn init_db(client: &Client){
 #[cfg(test)]
 mod test{
     use super::{connect, init_db};    
-    use mongodb::error::Error;
+    use mongodb::{Client, options::ClientOptions, error::Error, options::IndexOptions, IndexModel, bson::doc};
+    use super::user::User;
+    pub async fn init_db_test(client: &Client){
+        let options = IndexOptions::builder().unique(true).build();
+        let model = IndexModel::builder()
+            .keys(doc!{"email": 1})
+            .options(options)
+            .build();
+
+        client
+            .database("test")
+            .collection::<User>("users")
+            .create_index(model, None)
+            .await
+            .expect("Error occur while initializing database");
+    }
     #[tokio::test]
     async fn test_db_connection()->Result<(), Error>{
         let db_client = connect().await?;
