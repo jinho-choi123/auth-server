@@ -1,12 +1,43 @@
 use crate::utils::{rand_salt, hash};
 use std::fmt;
+use serde::{Deserialize, Serialize, Serializer, Deserializer,};
+use serde::de::Error;
+
+#[derive(Debug)]
 pub enum UserStatus {
     Admin,
     Active,
     Pending,
     InActive,
 }
+impl Serialize for UserStatus{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: serde::Serializer {
+        match *self{
+            UserStatus::Admin => serializer.serialize_str("Admin"),
+            UserStatus::Active => serializer.serialize_str("Active"),
+            UserStatus::Pending => serializer.serialize_str("Pending"),
+            UserStatus::InActive => serializer.serialize_str("InActive"),
+        }
+    }
+}
+impl<'de> Deserialize<'de> for UserStatus{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de> {
+        let s: &str = Deserialize::deserialize(deserializer)?;
+        match s {
+            "Admin" => Ok(UserStatus::Admin),
+            "Active" => Ok(UserStatus::Active),
+            "Pending" => Ok(UserStatus::Pending),
+            "InActive" => Ok(UserStatus::InActive),
+            _ => Err(Error::custom("Invalid User Status during deserializing.")),
+        }
+    }
+}
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct User {
     email: String,
     status: UserStatus,
