@@ -4,6 +4,7 @@ use super::{connect, init_db};
 use mongodb::{Collection, error::Error, error::ErrorKind};
 use mongodb::bson::doc;
 
+//create user in database
 pub async fn create_user(user: &User)->Result<(), Error> {
     let db_client = connect().await?;
     let users: Collection<User> = db_client.database("auth").collection::<User>("users");
@@ -11,6 +12,7 @@ pub async fn create_user(user: &User)->Result<(), Error> {
     return Ok(());
 }
 
+//find user in database by email
 pub async fn find_user(email: &String)->Result<Option<User>, Error>{
     let db_client = connect().await?;
     let users = db_client.database("auth").collection::<User>("users");
@@ -19,6 +21,7 @@ pub async fn find_user(email: &String)->Result<Option<User>, Error>{
     return Ok(result);
 }
 
+//delete user in database by email
 pub async fn delete_user(email: &String)->Result<(), Error>{
     let db_client = connect().await?;
     let users = db_client.database("auth").collection::<User>("users");
@@ -27,8 +30,13 @@ pub async fn delete_user(email: &String)->Result<(), Error>{
     return Ok(())
 }
 
-pub async fn verify_user(email: &String, password: &String)->Result<(), Error>{
-    return Ok(())
+//verify if user exists in database
+pub async fn verify_user(email: &String, password: &String)->Result<bool, Error>{
+    let user_info = find_user(email).await?;
+    match user_info {
+        None => Ok(false),
+        Some(_) => Ok(true),
+    }
 }
 
 #[cfg(test)]
