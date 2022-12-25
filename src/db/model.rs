@@ -30,12 +30,22 @@ pub async fn delete_user(email: &String)->Result<(), Error>{
     return Ok(())
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub enum VerifyStatus{
+    Success,
+    Fail(String),
+}
 //verify if user exists in database
-pub async fn verify_user(email: &String, password: &String)->Result<bool, Error>{
+pub async fn verify_user(email: &String, password: &String)->Result<VerifyStatus, Error>{
     let user_info = find_user(email).await?;
     match user_info {
-        None => Ok(false),
-        Some(_) => Ok(true),
+        None => Ok(VerifyStatus::Fail(String::from("User is not registered."))),
+        Some(v) => {
+            match User::verify(email, password, &v) {
+                Ok(()) => return Ok(VerifyStatus::Success),
+                Err(_) => return Ok(VerifyStatus::Fail(String::from("User password doesn\'t match."))),
+            }
+        }
     }
 }
 
@@ -44,6 +54,7 @@ mod test{
     use super::create_user;
     use super::User;
     use mongodb::error::Error;
+    use super::{verify_user, VerifyStatus};
 
     #[tokio::test]
     async fn test_create_user()->Result<(), Error>{
@@ -62,7 +73,15 @@ mod test{
         let user = User::new(&email, &password);
         create_user(&user).await.unwrap_or_else(|_|{panic!("Error occur when adding user first time")});
         create_user(&user).await.unwrap_or_else(|_|{panic!("Error occur when adding duplicate user")});
+    }
 
+    #[tokio::test]
+    async fn test_verify_user1() {
+        let email = String::from("testverify@testverify.com");
+        let password = String::from("passwordforverifyinguser");
+        let user = User::new(&email, &password);
+        create_user(&user).await;
+        assert_eq!(verify_user(&email, &password).await, Ok(VerifyStatus::Success));
     }
 
 
