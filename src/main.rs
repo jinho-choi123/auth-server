@@ -2,6 +2,7 @@ use actix_web::{App, HttpServer};
 mod routers;
 mod db;
 mod utils;
+mod errors;
 use db::{connect, init_db};
 use routers::check_server;
 
