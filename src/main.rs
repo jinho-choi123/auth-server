@@ -2,9 +2,9 @@ use actix_web::{App, HttpServer};
 mod routers;
 mod db;
 mod utils;
-mod errors;
 use db::{connect, init_db};
 use routers::check_server;
+use routers::users::create_user_api;
 
 #[actix_web::main]
 async fn main()->std::io::Result<()> {
@@ -12,6 +12,7 @@ async fn main()->std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
             .service(check_server)
+            .service(create_user_api)
     })
     .bind(("0.0.0.0", 9090))?
     .run()

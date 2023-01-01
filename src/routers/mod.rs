@@ -1,5 +1,6 @@
 use actix_web::{get, HttpResponse, Responder};
 use chrono::prelude::*;
+pub mod users;
 
 #[get("/checkserver")]
 pub async fn check_server() -> impl Responder{

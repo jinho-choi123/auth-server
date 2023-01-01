@@ -1,8 +1,8 @@
 use mongodb::{Client, options::ClientOptions, error::Error, options::IndexOptions, IndexModel, bson::doc};
 use std::env;
+pub mod user;
+pub mod model;
 use user::User;
-mod user;
-mod model;
 
 pub async fn connect()->Result<Client, Error>{
     let mongo_url = env::var("MONGO_URL").expect("$MONGO_URL doesnt exist!");

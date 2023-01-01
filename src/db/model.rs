@@ -1,10 +1,8 @@
 use futures::executor::block_on;
 use super::user::{User, UserStatus};
 use super::{connect, init_db};
-use crate::errors::VerificationStatus;
 use mongodb::{Collection, error::Error, error::ErrorKind};
 use mongodb::bson::doc;
-
 
 //create user in database
 pub async fn create_user(user: &User)->Result<(), Error> {
@@ -32,6 +30,12 @@ pub async fn delete_user(email: &String)->Result<(), Error>{
     return Ok(())
 }
 
+
+#[derive(Debug, PartialEq, Eq)]
+enum VerificationStatus {
+    Success,
+    Fail(String),
+}
 //verify if user exists in database
 pub async fn verify_user(email: &String, password: &String)->Result<VerificationStatus, Error>{
     let user_info = find_user(email).await?;
