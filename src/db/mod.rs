@@ -1,8 +1,8 @@
-use mongodb::{Client, options::ClientOptions, error::Error, options::IndexOptions, IndexModel, bson::doc};
-use std::env;
 pub mod user;
 pub mod model;
 use user::User;
+use mongodb::{Client, options::ClientOptions, error::Error, options::IndexOptions, IndexModel, bson::doc};
+use std::env;
 
 pub async fn connect()->Result<Client, Error>{
     let mongo_url = env::var("MONGO_URL").expect("$MONGO_URL doesnt exist!");
@@ -10,6 +10,22 @@ pub async fn connect()->Result<Client, Error>{
     let client = Client::with_options(client_options)?;
     println!("############Connected to MONGODB###############");
     return Ok(client)
+}
+
+//development purpose only
+pub async fn init_test_db(client: &Client){
+    let options = IndexOptions::builder().unique(true).build();
+    let model = IndexModel::builder()
+        .keys(doc!{"email": 1})
+        .options(options)
+        .build();
+
+    client
+        .database("test")
+        .collection::<User>("users")
+        .create_index(model, None)
+        .await
+        .expect("Error occur while initializing database");
 }
 
 pub async fn init_db(client: &Client){
