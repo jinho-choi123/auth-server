@@ -4,7 +4,7 @@ mod db;
 mod utils;
 use db::{connect, init_db, init_test_db};
 use routers::check_server;
-use routers::users::create_user_api;
+use routers::users::{create::create_user_api, delete::delete_user_api};
 
 #[actix_web::main]
 async fn main()->std::io::Result<()> {
@@ -17,6 +17,7 @@ async fn main()->std::io::Result<()> {
         App::new()
             .service(check_server)
             .service(create_user_api)
+            .service(delete_user_api)
     })
     .bind(("0.0.0.0", 9090))?
     .run()

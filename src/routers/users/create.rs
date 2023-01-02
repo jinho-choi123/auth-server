@@ -1,11 +1,11 @@
-use actix_web::{post, HttpResponse, Responder, web, error::ResponseError, http::StatusCode};
+use actix_web::{post, delete, HttpResponse, Responder, web, error::ResponseError, http::StatusCode};
 use crate::db::user::User;
 use crate::db::model::{create_user};
 use mongodb::error::Error;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
-struct createReq{
+pub struct createReq{
     email: String,
     password: String,
 }

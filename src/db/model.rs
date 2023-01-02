@@ -8,11 +8,7 @@ use mongodb::bson::doc;
 //create user in database
 pub async fn create_user(user: &User)->Result<(), AppErr> {
     let db_client = connect()
-        .await
-        .map_err(|err| AppErr::new(
-            Some("Error occur while connecting to DB".to_string()), 
-            Some(format!("{:?}", err)), 
-            AppErrType::DB_Err))?;
+        .await?;
     let users: Collection<User> = db_client.database("auth").collection::<User>("users");
 
     //before inserting user into database, search if there are duplicate email
@@ -41,11 +37,7 @@ pub async fn create_user(user: &User)->Result<(), AppErr> {
 #[cfg(test)]
 pub async fn test_create_user(user: &User)->Result<(), AppErr> {
     let db_client = connect()
-        .await
-        .map_err(|err| AppErr::new(
-            Some("Error occur while connecting to DB".to_string()), 
-            Some(format!("{:?}", err)), 
-            AppErrType::DB_Err))?;
+        .await?;
     let users: Collection<User> = db_client.database("test").collection::<User>("users");
 
     //before inserting user into database, search if there are duplicate email
@@ -73,12 +65,7 @@ pub async fn test_create_user(user: &User)->Result<(), AppErr> {
 //find user in database by email
 pub async fn find_user(email: &String)->Result<Option<User>, AppErr>{
     let db_client = connect()
-        .await
-        .map_err(|err| AppErr::new(
-            Some("Error occur while connecting to DB".to_string()),
-            Some(format!("{:?}", err)),
-            AppErrType::DB_Err,
-        ))?;
+        .await?;
     let users = db_client.database("auth").collection::<User>("users");
     let filter = doc!{"email": email};
     let result = users
@@ -96,12 +83,7 @@ pub async fn find_user(email: &String)->Result<Option<User>, AppErr>{
 #[cfg(test)]
 pub async fn test_find_user(email: &String)->Result<Option<User>, AppErr>{
     let db_client = connect()
-        .await
-        .map_err(|err| AppErr::new(
-            Some("Error occur while connecting to DB".to_string()),
-            Some(format!("{:?}", err)),
-            AppErrType::DB_Err,
-        ))?;
+        .await?;
     let users = db_client.database("test").collection::<User>("users");
     let filter = doc!{"email": email};
     let result = users
@@ -115,14 +97,30 @@ pub async fn test_find_user(email: &String)->Result<Option<User>, AppErr>{
     return Ok(result);
 }
 
-// //delete user in database by email
-// pub async fn delete_user(email: &String)->Result<(), Error>{
-//     let db_client = connect().await?;
-//     let users = db_client.database("auth").collection::<User>("users");
-//     let filter = doc!{"email": email};
-//     users.delete_one(filter, None).await?;
-//     return Ok(())
-// }
+//delete user in database by email
+pub async fn delete_user(email: &String)->Result<(), AppErr>{
+    let db_client = connect()
+        .await?;
+    let users = db_client.database("auth").collection::<User>("users");
+
+    //before deleting user from database, check if user exists in it.
+    match find_user(email).await? {
+        Some(_) => (),
+        None => return Err(AppErr::new(
+            Some("User not found. Please check your email".to_string()),
+            Some("Error occur while deleting user. User does not exist in the DB".to_string()),
+            AppErrType::NotFound_Err,
+        )),
+    }
+    let filter = doc!{"email": email};
+    users.delete_one(filter, None)
+    .await
+    .map_err(|err| AppErr::new(
+        Some("Error occur while connecting to DB".to_string()), 
+        Some(format!("{:?}", err)), 
+        AppErrType::DB_Err))?;
+    return Ok(())
+}
 
 
 // #[derive(Debug, PartialEq, Eq)]

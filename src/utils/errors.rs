@@ -6,6 +6,7 @@ use std::fmt;
 pub enum AppErrType {
     DB_Err,
     NotFound_Err,
+    Verification_Err
 }
 
 #[derive(Debug)]
@@ -41,6 +42,11 @@ impl AppErr {
                 cause: _, 
                 errorType: AppErrType::NotFound_Err 
             } => "The request item was not found.".to_string(),
+            AppErr {
+                message: None,
+                cause: _,
+                errorType: AppErrType::Verification_Err,
+            } => "Verification error. Please check if your account has enough privilege.".to_string(),
         }
     }
 }
@@ -50,12 +56,12 @@ pub struct AppErrResponse {
     pub error: String,
 }
 
-
 impl ResponseError for AppErr {
     fn status_code(&self) -> StatusCode {
         match self.errorType{
             AppErrType::DB_Err => StatusCode::INTERNAL_SERVER_ERROR,
             AppErrType::NotFound_Err => StatusCode::NOT_FOUND,
+            AppErrType::Verification_Err => StatusCode::BAD_REQUEST,
         }
     }
 
@@ -66,3 +72,4 @@ impl ResponseError for AppErr {
             })
     }
 }
+
