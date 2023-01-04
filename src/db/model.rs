@@ -123,24 +123,27 @@ pub async fn delete_user(email: &String)->Result<(), AppErr>{
 }
 
 
-// #[derive(Debug, PartialEq, Eq)]
-// enum VerificationStatus {
-//     Success,
-//     Fail(String),
-// }
-// //verify if user exists in database
-// pub async fn verify_user(email: &String, password: &String)->Result<VerificationStatus, Error>{
-//     let user_info = find_user(email).await?;
-//     match user_info {
-//         None => Ok(VerificationStatus::Fail(String::from("User is not registered."))),
-//         Some(v) => {
-//             match User::verify(email, password, &v) {
-//                 Ok(()) => return Ok(VerificationStatus::Success),
-//                 Err(_) => return Ok(VerificationStatus::Fail(String::from("User password doesn\'t match."))),
-//             }
-//         }
-//     }
-// }
+//verify if user exists in database
+pub async fn verify_user(email: &String, password: &String)->Result<String, AppErr>{
+    let user_info = find_user(email).await?;
+    match user_info {
+        Some(user) => {
+            match User::verify(email, password, &user) {
+                Ok(()) => return Ok("Verification Success. JWT Token blah blah".to_string()),
+                Err(err) => return Err(AppErr::new(
+                    Some("Invalid password. Please check your password again.".to_string()),
+                    Some(format!("{:?}", err)),
+                    AppErrType::Verification_Err,
+                ))
+            }
+        },
+        None => return Err(AppErr::new(
+            Some("User does not exist. Please check user email.".to_string()),
+            None,
+            AppErrType::NotFound_Err,
+        ))
+    }
+}
 
 #[cfg(test)]
 mod test{
