@@ -6,7 +6,8 @@ use std::fmt;
 pub enum AppErrType {
     DB_Err,
     NotFound_Err,
-    Verification_Err
+    Verification_Err,
+    JWT_Err
 }
 
 #[derive(Debug)]
@@ -47,6 +48,11 @@ impl AppErr {
                 cause: _,
                 errorType: AppErrType::Verification_Err,
             } => "Verification error. Please check if your account has enough privilege.".to_string(),
+            AppErr {
+                message: None,
+                cause: _,
+                errorType: AppErrType::JWT_Err,
+            } => "Error occur while processing with JWT. Please contact service team.".to_string(),
         }
     }
 }
@@ -62,6 +68,7 @@ impl ResponseError for AppErr {
             AppErrType::DB_Err => StatusCode::INTERNAL_SERVER_ERROR,
             AppErrType::NotFound_Err => StatusCode::NOT_FOUND,
             AppErrType::Verification_Err => StatusCode::BAD_REQUEST,
+            AppErrType::JWT_Err => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 
