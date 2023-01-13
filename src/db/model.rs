@@ -6,13 +6,13 @@ use crate::utils::errors::{AppErr, AppErrResponse, AppErrType};
 use mongodb::bson::doc;
 
 //create user in database
-pub async fn create_user(user: &User)->Result<(), AppErr> {
+pub async fn create_dbuser(user: &User)->Result<(), AppErr> {
     let db_client = connect()
         .await?;
     let users: Collection<User> = db_client.database("auth").collection::<User>("users");
 
     //before inserting user into database, search if there are duplicate email
-    match find_user(&user.email).await? {
+    match find_dbuser(&user.email).await? {
         Some(_) => return Err(AppErr::new(
             Some("Duplicate email found. Please check your email".to_string()),
             Some("duplicate key error in db".to_string()),
@@ -63,7 +63,7 @@ pub async fn test_create_user(user: &User)->Result<(), AppErr> {
 }
 
 //find user in database by email
-pub async fn find_user(email: &String)->Result<Option<User>, AppErr>{
+pub async fn find_dbuser(email: &String)->Result<Option<User>, AppErr>{
     let db_client = connect()
         .await?;
     let users = db_client.database("auth").collection::<User>("users");
@@ -98,13 +98,13 @@ pub async fn test_find_user(email: &String)->Result<Option<User>, AppErr>{
 }
 
 //delete user in database by email
-pub async fn delete_user(email: &String)->Result<(), AppErr>{
+pub async fn delete_dbuser(email: &String)->Result<(), AppErr>{
     let db_client = connect()
         .await?;
     let users = db_client.database("auth").collection::<User>("users");
 
     //before deleting user from database, check if user exists in it.
-    match find_user(email).await? {
+    match find_dbuser(email).await? {
         Some(_) => (),
         None => return Err(AppErr::new(
             Some("User not found. Please check your email".to_string()),
@@ -124,8 +124,9 @@ pub async fn delete_user(email: &String)->Result<(), AppErr>{
 
 
 //verify if user exists in database
-pub async fn verify_user(email: &String, password: &String)->Result<String, AppErr>{
-    let user_info = find_user(email).await?;
+//then return jwt token if Ok
+pub async fn verify_dbuser(email: &String, password: &String)->Result<String, AppErr>{
+    let user_info = find_dbuser(email).await?;
     match user_info {
         Some(user) => {
             match User::verify(email, password, &user) {

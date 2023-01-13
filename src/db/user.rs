@@ -63,7 +63,6 @@ impl User {
             return Err("Password doesn\'t match. ");
         }
         return Ok(());
-
     }
 }
 

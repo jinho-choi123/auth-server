@@ -2,6 +2,7 @@ use rand::{thread_rng, Rng};
 use sha2::{Sha256, Digest};
 use std::env;
 pub mod errors;
+pub mod jwt;
 pub fn rand_salt()->String {
     let mut rng = thread_rng();
     let salt_size = rng.gen_range(30..50);
