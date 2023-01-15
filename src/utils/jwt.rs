@@ -72,11 +72,26 @@ pub fn validate_jwt(jwt: &String)->Result<(), AppErr> {
 
 }
 
+pub fn decode_jwt(jwt: &String)->Result<Claims, AppErr> {
+    match decode::<Claims>(
+        jwt,
+        &get_DecodingKey(),
+        &Validation::new(HS512),
+    ) {
+        Ok(c) => return Ok(c.claims),
+        Err(err) => return Err(AppErr::new(
+            Some("Error occur while decoding jwt.".to_string()),
+            Some(format!("{:?}", err)),
+            AppErrType::JWT_Err,
+        ))
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::{utils::errors::AppErr, routers::users::create};
 
-    use super::{create_jwt, validate_jwt};
+    use super::{create_jwt, validate_jwt, decode_jwt};
 
     #[test]
     fn test_create_jwt()->Result<(), AppErr> {
@@ -88,6 +103,14 @@ mod test {
     fn test_validate_jwt()->Result<(), AppErr> {
         let token = create_jwt(&"mingo_kookie".to_string())?;
         validate_jwt(&token)?;
+        return Ok(())
+    }
+
+    #[test]
+    fn test_decode_jwt()->Result<(), AppErr> {
+        let token = create_jwt(&"mingo_kookie".to_string())?;
+        validate_jwt(&token)?;
+        println!("{:?}", decode_jwt(&token));
         return Ok(())
     }
 
