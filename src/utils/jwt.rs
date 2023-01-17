@@ -22,18 +22,26 @@ fn get_DecodingKey()->DecodingKey {
     return DecodingKey::from_secret(uni_salt.as_bytes())
 }
 
-pub fn create_jwt(username: &String)->Result<String, AppErr> {
+pub fn create_jwt(username: &String)->Result<(String, String), AppErr> {
     let fivemin: u64 = 1000*60*5;
+    let onehour: u64 = 1000*60*60;
     let header = Header::new(HS512);
-    let payload = Claims {
-        sub: "auth".to_string(),
+    let access_payload = Claims {
+        sub: "access".to_string(),
         exp: get_current_timestamp()+fivemin,
         iat: get_current_timestamp(),
         username: username.to_string(),
     };
 
-    let jwt = match encode(&header, &payload, &get_EncodingKey()) {
-        Ok(t) => Ok(t),
+    let refresh_payload = Claims {
+        sub: "refresh".to_string(),
+        exp: get_current_timestamp()+onehour,
+        iat: get_current_timestamp(),
+        username: username.to_string(),
+    };
+
+    let access_jwt: String = match encode(&header, &access_payload, &get_EncodingKey()) {
+        Ok(access_token) => access_token,
         Err(err) => return Err(AppErr::new(
             Some("Error occur while encoding jwt.".to_string()),
             Some(format!("{:?}", err)),
@@ -41,7 +49,20 @@ pub fn create_jwt(username: &String)->Result<String, AppErr> {
         ))
     };
 
-    return jwt
+    let refresh_jwt: String= match encode(&header, &refresh_payload, &get_EncodingKey()) {
+        Ok(refresh_token) => {
+            //refresh token을 database에 저장한다.
+            
+            refresh_token
+        },
+        Err(err) => return Err(AppErr::new(
+            Some("Error occur while encoding jwt.".to_string()),
+            Some(format!("{:?}", err)),
+            AppErrType::JWT_Err,
+        ))
+    };
+
+    return Ok((access_jwt, refresh_jwt))
 }
 
 pub fn validate_jwt(jwt: &String)->Result<(), AppErr> {
@@ -101,16 +122,16 @@ mod test {
 
     #[test]
     fn test_validate_jwt()->Result<(), AppErr> {
-        let token = create_jwt(&"mingo_kookie".to_string())?;
-        validate_jwt(&token)?;
+        let (accessToken, refreshToken) = create_jwt(&"mingo_kookie".to_string())?;
+        validate_jwt(&accessToken)?;
         return Ok(())
     }
 
     #[test]
     fn test_decode_jwt()->Result<(), AppErr> {
-        let token = create_jwt(&"mingo_kookie".to_string())?;
-        validate_jwt(&token)?;
-        println!("{:?}", decode_jwt(&token));
+        let (accessToken, refreshToken) = create_jwt(&"mingo_kookie".to_string())?;
+        validate_jwt(&accessToken)?;
+        println!("{:?}", decode_jwt(&accessToken));
         return Ok(())
     }
 
