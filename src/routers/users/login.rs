@@ -1,4 +1,4 @@
-use actix_web::{get,HttpResponse, Responder, web, error::ResponseError, http::StatusCode};
+use actix_web::{post,HttpResponse, Responder, web, error::ResponseError, http::StatusCode};
 use crate::db::model::{verify_dbuser, store_refresh_jwt};
 use crate::utils::jwt::{create_jwt};
 use serde::{Deserialize, Serialize};
@@ -15,7 +15,7 @@ struct JWTResponse {
     refreshToken: String,
 }
 
-#[get("/users/login")]
+#[post("/users/login")]
 pub async fn login_user_api(data: web::Json<loginReq>) ->impl Responder {
     match verify_dbuser(&data.email, &data.password).await {
         Ok(()) => {
