@@ -124,13 +124,12 @@ pub async fn delete_dbuser(email: &String)->Result<(), AppErr>{
 
 
 //verify if user exists in database
-//then return jwt token if Ok
-pub async fn verify_dbuser(email: &String, password: &String)->Result<String, AppErr>{
+pub async fn verify_dbuser(email: &String, password: &String)->Result<(), AppErr>{
     let user_info = find_dbuser(email).await?;
     match user_info {
         Some(user) => {
             match User::verify(email, password, &user) {
-                Ok(()) => return Ok("Verification Success. JWT Token blah blah".to_string()),
+                Ok(()) => return Ok(()),
                 Err(err) => return Err(AppErr::new(
                     Some("Invalid password. Please check your password again.".to_string()),
                     Some(format!("{:?}", err)),
@@ -144,6 +143,34 @@ pub async fn verify_dbuser(email: &String, password: &String)->Result<String, Ap
             AppErrType::NotFound_Err,
         ))
     }
+}
+
+//db에 user의 refresh token을 저장한다. 
+pub async fn store_refresh_jwt(refresh_token: &String, userEmail: &String) -> Result<(), AppErr> {
+    let db_client = connect()
+        .await?;
+    let users: Collection<User> = db_client.database("auth").collection::<User>("users");
+    match find_dbuser(userEmail).await? {
+        Some(user) => {
+            let update_refresh_jwt = doc!{"$set": {"refresh_jwt": Some(refresh_token)}};
+            let userDoc = doc!{"email": user.email};
+            users
+                .update_one(userDoc, update_refresh_jwt, None )
+                .await
+                .map_err(|err| AppErr::new(
+                    Some("Error occur while updating refresh token in DB".to_string()), 
+                    Some(format!("{:?}", err)), 
+                    AppErrType::DB_Err))?;
+
+        },
+        None => return Err(AppErr::new(
+            Some("User does not exist. Failed storing refresh JWT to DB.".to_string()),
+            None,
+            AppErrType::NotFound_Err,
+        ))
+    }
+
+    return Ok(());
 }
 
 #[cfg(test)]
