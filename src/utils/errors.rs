@@ -7,7 +7,11 @@ pub enum AppErrType {
     DB_Err,
     NotFound_Err,
     Verification_Err,
-    JWT_Err
+    JWT_Err,
+    JwtAccessExpired_ERR,
+    JwtRefreshExpired_ERR,
+    NoAuthHeader_Err,
+    NotValidToken_Err,
 }
 
 #[derive(Debug)]
@@ -53,6 +57,27 @@ impl AppErr {
                 cause: _,
                 errorType: AppErrType::JWT_Err,
             } => "Error occur while processing with JWT. Please contact service team.".to_string(),
+            AppErr {
+                message: None,
+                cause: _,
+                errorType: AppErrType::NoAuthHeader_Err,
+            } => "There is no auth header in your request. Please attatch jwt access token to your header.".to_string(),
+            AppErr {
+                message: None,
+                cause: _,
+                errorType: AppErrType::NotValidToken_Err,
+            } => "JWT Access token is not valid. Please check if it is outdated or modified.".to_string(),
+            AppErr {
+                message: None,
+                cause: _,
+                errorType: AppErrType::JwtAccessExpired_ERR,
+            } => "JWT Access token is expired. Request new access token using refresh token.".to_string(),
+            AppErr {
+                message: None,
+                cause: _,
+                errorType: AppErrType::JwtRefreshExpired_ERR,
+            } => "JWT Access token is expired. Request new access token using refresh token.".to_string(),
+        
         }
     }
 }
@@ -69,6 +94,10 @@ impl ResponseError for AppErr {
             AppErrType::NotFound_Err => StatusCode::NOT_FOUND,
             AppErrType::Verification_Err => StatusCode::BAD_REQUEST,
             AppErrType::JWT_Err => StatusCode::INTERNAL_SERVER_ERROR,
+            AppErrType::NotValidToken_Err => StatusCode::BAD_REQUEST,
+            AppErrType::NoAuthHeader_Err => StatusCode::BAD_REQUEST,
+            AppErrType::JwtAccessExpired_ERR => StatusCode::BAD_REQUEST,
+            AppErrType::JwtRefreshExpired_ERR => StatusCode::BAD_REQUEST,
         }
     }
 
