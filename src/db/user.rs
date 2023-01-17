@@ -1,8 +1,7 @@
 use crate::utils::{rand_salt, hash};
 use std::fmt;
-use serde::{Deserialize, Serialize, Serializer, Deserializer,};
+use serde::{Deserialize, Serialize, Deserializer};
 use serde::de::Error;
-
 #[derive(Debug)]
 pub enum UserStatus {
     Admin,
@@ -44,6 +43,7 @@ pub struct User {
     pub status: UserStatus,
     password: String,
     hash_salt: String,
+    refresh_jwt: Option<String>,
 }
 
 impl User {
@@ -51,7 +51,7 @@ impl User {
         let init_salt = rand_salt();
 
         let hashed_password = hash(&init_salt, password);
-        User { email: email.to_string(), status: UserStatus::Pending, password: hashed_password, hash_salt: init_salt}
+        User { email: email.to_string(), status: UserStatus::Pending, password: hashed_password, hash_salt: init_salt, refresh_jwt: None}
     }
 
     pub fn verify(email: & String, password: & String, user_info: & User)->Result<(), &'static str>{
@@ -69,7 +69,7 @@ impl User {
 #[cfg(not(debug_assertions))]
 impl fmt::Display for User {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "(email: {}, status: {}, password: {}, hashSalt: {})", self.email, self.status, self.password, self.hashSalt)
+        write!(f, "(email: {}, status: {}, password: {}, hashSalt: {}, refresh_token: {})", self.email, self.status, self.password, self.hashSalt, self.refresh_jwt)
     }
 }
 
