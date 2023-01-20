@@ -4,13 +4,25 @@ use crate::utils::jwt::{validate_access_jwt};
 use crate::utils::errors::{AppErr, AppErrType};
 use serde::{Deserialize, Serialize};
 
+#[derive(Serialize)]
+struct VerifiedUser_Response {
+    username: String,
+}
+
+
 #[get("/jwt/verify")]
 pub async fn verify_user_api(req: HttpRequest) -> impl Responder {
     match req.headers().get("Authorization") {
         Some(accessToken) => {
             let jwt = accessToken.to_str().unwrap().replace("Bearer ", "");
+            
             match validate_access_jwt(&jwt) {
-                Ok(()) => HttpResponse::Ok().body("Your JWT Token is Valid!"),
+                Ok(username) => {
+                    let username_response = VerifiedUser_Response {
+                        username: username
+                    };
+                    HttpResponse::Ok().json(web::Json(username_response))
+                },
                 Err(err) => err.error_response(),
             }
         },
