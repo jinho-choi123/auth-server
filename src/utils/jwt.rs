@@ -4,6 +4,9 @@ use jsonwebtoken::{
 use std::env;
 use crate::utils::errors::{AppErr, AppErrResponse, AppErrType};
 use serde::{Deserialize, Serialize};
+use crate::utils::str2int::parse2u64;
+
+use super::str2int;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
@@ -14,28 +17,28 @@ pub struct Claims {
 }
 
 fn get_EncodingKey()->EncodingKey {
-    let uni_salt = env::var("DB_UNI_SALT1").expect("DB_UNI_SALT1 env variable not set");
+    let uni_salt = env::var("JWT_SALT").expect("JWT_SALT env variable not set");
     return EncodingKey::from_secret(uni_salt.as_bytes())
 }
 fn get_DecodingKey()->DecodingKey {
-    let uni_salt = env::var("DB_UNI_SALT1").expect("DB_UNI_SALT1 env variable not set");
+    let uni_salt = env::var("JWT_SALT").expect("JWT_SALT env variable not set");
     return DecodingKey::from_secret(uni_salt.as_bytes())
 }
 
 pub fn create_jwt(username: &String)->Result<(String, String), AppErr> {
-    let fivemin: u64 = 60*5;
-    let onehour: u64 = 60*60;
+    let access_jwt_lifetime: u64 = parse2u64(&env::var("ACCESS_JWT_LIFETIME").unwrap());
+    let refresh_jwt_lifetime: u64 = parse2u64(&env::var("REFRESH_JWT_LIFETIME").unwrap());
     let header = Header::new(HS512);
     let access_payload = Claims {
         sub: "access".to_string(),
-        exp: get_current_timestamp()+fivemin,
+        exp: get_current_timestamp()+access_jwt_lifetime,
         iat: get_current_timestamp(),
         username: username.to_string(),
     };
 
     let refresh_payload = Claims {
         sub: "refresh".to_string(),
-        exp: get_current_timestamp()+onehour,
+        exp: get_current_timestamp()+refresh_jwt_lifetime,
         iat: get_current_timestamp(),
         username: username.to_string(),
     };
