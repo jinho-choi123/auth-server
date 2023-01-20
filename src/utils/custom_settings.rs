@@ -3,7 +3,6 @@ use std::str;
 use rand::{thread_rng, Rng};
 use rand::distributions::Alphanumeric;
 
-
 fn generate_random_hash()->String {
     let salt: String = thread_rng()
         .sample_iter(&Alphanumeric)

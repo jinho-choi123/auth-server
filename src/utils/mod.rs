@@ -4,6 +4,7 @@ use std::env;
 pub mod errors;
 pub mod jwt;
 pub mod custom_settings;
+pub mod str2int;
 
 pub fn rand_salt()->String {
     let mut rng = thread_rng();
@@ -13,8 +14,8 @@ pub fn rand_salt()->String {
 }
 
 fn salt_padding(init_salt: &mut String)->&String{
-    let uni_hash1 = env::var("DB_UNI_SALT1").expect("DB_UNI_SALT1 env variable not set");
-    let uni_hash2 = env::var("DB_UNI_SALT2").expect("DB_UNI_SALT2 env variable not set");
+    let uni_hash1 = env::var("DB_PWD_SALT1").expect("DB_PWD_SALT1 env variable not set");
+    let uni_hash2 = env::var("DB_PWD_SALT2").expect("DB_PWD_SALT2 env variable not set");
     init_salt.push_str(&uni_hash1);
     init_salt.insert_str(0, &uni_hash2);
     return init_salt;
