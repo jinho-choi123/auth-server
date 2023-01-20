@@ -3,6 +3,7 @@ use sha2::{Sha256, Digest};
 use std::env;
 pub mod errors;
 pub mod jwt;
+pub mod custom_settings;
 
 pub fn rand_salt()->String {
     let mut rng = thread_rng();
