@@ -23,8 +23,8 @@ fn get_DecodingKey()->DecodingKey {
 }
 
 pub fn create_jwt(username: &String)->Result<(String, String), AppErr> {
-    let fivemin: u64 = 1000*60*5;
-    let onehour: u64 = 1000*60*60;
+    let fivemin: u64 = 60*5;
+    let onehour: u64 = 60*60;
     let header = Header::new(HS512);
     let access_payload = Claims {
         sub: "access".to_string(),
@@ -65,7 +65,7 @@ pub fn create_jwt(username: &String)->Result<(String, String), AppErr> {
     return Ok((access_jwt, refresh_jwt))
 }
 
-pub fn validate_access_jwt(jwt: &String)->Result<(), AppErr> {
+pub fn validate_access_jwt(jwt: &String)->Result<String, AppErr> {
     let validation = Validation::new(HS512);
     let validate_result = match decode_jwt(jwt) {
         Ok(claim) => {
@@ -83,6 +83,8 @@ pub fn validate_access_jwt(jwt: &String)->Result<(), AppErr> {
         Err(err) => Err(err)
     }?;
     //check for expiration time
+    println!("validate_result is {}", validate_result.exp);
+    println!("current timestamp is {}", get_current_timestamp());
     if validate_result.exp < get_current_timestamp() {
         return Err(AppErr::new(
             Some("JWT Token has expired. Please refresh access token.".to_string()),
@@ -90,7 +92,7 @@ pub fn validate_access_jwt(jwt: &String)->Result<(), AppErr> {
             AppErrType::JwtAccessExpired_ERR,
         ))
     }
-    return Ok(())
+    return Ok(validate_result.username)
 }
 
 pub fn validate_refresh_jwt(jwt: &String)->Result<(), AppErr> {
