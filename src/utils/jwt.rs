@@ -2,10 +2,9 @@ use jsonwebtoken::{
     decode, encode, get_current_timestamp, Algorithm::HS512, DecodingKey, EncodingKey, Validation, Header
 };
 use std::env;
-use crate::utils::errors::{AppErr, AppErrResponse, AppErrType};
+use crate::{utils::errors::{AppErr, AppErrResponse, AppErrType}, db::model::get_stored_refresh_jwt};
 use serde::{Deserialize, Serialize};
 use crate::utils::str2int::parse2u64;
-
 use super::str2int;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -98,7 +97,7 @@ pub fn validate_access_jwt(jwt: &String)->Result<String, AppErr> {
     return Ok(validate_result.username)
 }
 
-pub fn validate_refresh_jwt(jwt: &String)->Result<(), AppErr> {
+pub async fn validate_refresh_jwt(jwt: &String)->Result<String, AppErr> {
     let validation = Validation::new(HS512);
     let validate_result = match decode_jwt(jwt) {
         Ok(claim) => {
@@ -107,14 +106,38 @@ pub fn validate_refresh_jwt(jwt: &String)->Result<(), AppErr> {
             } else {
                 Err(AppErr::new(
                     Some(
-                        "Token you provided is not Access token.".to_string()), 
-                        Some("Token you provided is not Access token.".to_string()),
+                        "Provided Token is not Refresh token.".to_string()), 
+                        Some("Provided Token is not Refresh token.".to_string()),
                         AppErrType::NotValidToken_Err,
                 ))
             }
         },
         Err(err) => Err(err)
     }?;
+
+    //check if refresh token is stored in database.
+    let userEmail = validate_result.username;
+    
+    match get_stored_refresh_jwt(&userEmail).await {
+        Ok(Some(refreshToken)) => {
+            if refreshToken != *jwt {
+                return Err(AppErr::new(
+                    Some("JWT RefreshToken you provided is not in Database".to_string()),
+                    Some("JWT RefreshToken you provided is not in Database".to_string()),
+                    AppErrType::NotFound_Err,
+                ))
+            }
+        },
+        Ok(None) => return Err(
+            AppErr::new(
+                Some("JWT Refresh Token is not valid. It is not stored in dataabase.".to_string()),
+            Some("JWT Refresh Token is not stored in DB.".to_string()),
+            AppErrType::NotValidToken_Err,
+            )
+        ),
+        Err(err) => return Err(err)
+    }
+
     //check for expiration time
     if validate_result.exp < get_current_timestamp() {
         return Err(AppErr::new(
@@ -123,7 +146,7 @@ pub fn validate_refresh_jwt(jwt: &String)->Result<(), AppErr> {
             AppErrType::JwtRefreshExpired_ERR,
         ))
     }
-    return Ok(())
+    return Ok(userEmail)
 }
 
 pub fn decode_jwt(jwt: &String)->Result<Claims, AppErr> {
@@ -172,11 +195,11 @@ mod test {
         return Ok(())
     }
 
-    #[test]
-    fn test_decode_jwt()->Result<(), AppErr> {
+    #[tokio::test]
+    async fn test_decode_jwt()->Result<(), AppErr> {
         let (accessToken, refreshToken) = create_jwt(&"mingo_kookie".to_string())?;
         validate_access_jwt(&accessToken)?;
-        validate_refresh_jwt(&refreshToken)?;
+        validate_refresh_jwt(&refreshToken).await?;
         println!("{:?}", decode_jwt(&accessToken));
         return Ok(())
     }

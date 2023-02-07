@@ -145,6 +145,51 @@ pub async fn verify_dbuser(email: &String, password: &String)->Result<(), AppErr
     }
 }
 
+//db에 저장되어있는 refresh token을 가져온다.
+pub async fn get_stored_refresh_jwt(userEmail: &String) -> Result<Option<String>, AppErr> {
+    let db_client = connect().await?;
+
+    let users: Collection<User> = db_client.database("auth").collection::<User>("users");
+
+    let filter = doc!{"email": userEmail};
+
+    let stored_refreshToken = users.find_one(filter, None)
+        .await
+        .map_err(|err| AppErr::new(
+            Some("error occur while searching refresh token in database.".to_string()),
+            Some(err.to_string()),
+            AppErrType::NotFound_Err,
+        ))?.unwrap().refresh_jwt;
+    return Ok(stored_refreshToken);
+}
+
+pub async fn clear_refresh_jwt(userEmail: &String) -> Result<(), AppErr> {
+    let db_client = connect()
+        .await?;
+    let users: Collection<User> = db_client.database("auth").collection::<User>("users");
+    match find_dbuser(userEmail).await? {
+        Some(user) => {
+            let update_refresh_jwt = doc!{"$set": {"refresh_jwt": None::<String>}};
+            let userDoc = doc!{"email": user.email};
+            users
+                .update_one(userDoc, update_refresh_jwt, None )
+                .await
+                .map_err(|err| AppErr::new(
+                    Some("Error occur while updating refresh token in DB".to_string()), 
+                    Some(format!("{:?}", err)), 
+                    AppErrType::DB_Err))?;
+
+        },
+        None => return Err(AppErr::new(
+            Some("User does not exist. Failed storing refresh JWT to DB.".to_string()),
+            None,
+            AppErrType::NotFound_Err,
+        ))
+    }
+
+    return Ok(());
+}
+
 //db에 user의 refresh token을 저장한다. 
 pub async fn store_refresh_jwt(refresh_token: &String, userEmail: &String) -> Result<(), AppErr> {
     let db_client = connect()
@@ -214,9 +259,4 @@ mod test{
         test_create_user(&user).await.unwrap_or_else(|err| panic!("{:?}", err));
 
     }
-
-
-
-    
-
 }

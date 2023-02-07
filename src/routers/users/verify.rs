@@ -5,27 +5,32 @@ use crate::utils::errors::{AppErr, AppErrType};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize)]
-struct VerifiedUser_Response {
-    username: String,
+struct verifyRes {
+    msg: String,
+    email: String,
 }
 
 
 #[get("/jwt/verify")]
-pub async fn verify_user_api(req: HttpRequest) -> impl Responder {
+pub async fn verify_user_api(req: HttpRequest) -> Result<web::Json<verifyRes>, AppErr> {
     match req.headers().get("Authorization") {
         Some(accessToken) => {
             let jwt = accessToken.to_str().unwrap().replace("Bearer ", "");
             
             match validate_access_jwt(&jwt) {
-                Ok(username) => {
-                    let username_response = VerifiedUser_Response {
-                        username: username
-                    };
-                    HttpResponse::Ok().json(web::Json(username_response))
+                Ok(email) => {
+                    Ok(
+                        web::Json(
+                            verifyRes {
+                                email: email,
+                                msg: "verification success. User is authorized.".to_string(),
+                            }
+                        )
+                    )
                 },
-                Err(err) => err.error_response(),
+                Err(err) => Err(err),
             }
         },
-        None => AppErr::new(None, None, AppErrType::NoAuthHeader_Err).error_response()
+        None => Err(AppErr::new(None, None, AppErrType::NoAuthHeader_Err))
     }
 }
