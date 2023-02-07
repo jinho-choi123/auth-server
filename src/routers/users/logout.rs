@@ -1,5 +1,5 @@
 use actix_web::{get,HttpResponse, Responder, web, error::ResponseError, http::StatusCode};
-use crate::db::model::{find_dbuser, store_refresh_jwt};
+use crate::db::model::{find_dbuser, clear_refresh_jwt};
 use crate::utils::errors::AppErr;
 use crate::utils::jwt::{create_jwt};
 use serde::{Deserialize, Serialize};
@@ -20,7 +20,7 @@ pub async fn logout_user_api(data: web::Json<logoutReq>) -> Result<web::Json<log
     let userEmail = data.email.clone();
     match find_dbuser(&userEmail).await {
         Ok(_) => {
-            match store_refresh_jwt(&String::new(), &data.email).await {
+            match clear_refresh_jwt(&String::new()).await {
                 Ok(()) => {
                     Ok(
                         web::Json(
