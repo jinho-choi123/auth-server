@@ -1,10 +1,17 @@
-use actix_web::{get, HttpResponse, Responder};
+use actix_web::{get, HttpResponse, web};
 use chrono::prelude::*;
+use serde::Serialize;
 pub mod users;
 
-#[get("/checkserver")]
-pub async fn check_server() -> impl Responder{
-    let local: DateTime<Local> = Local::now();
-    HttpResponse::Ok().body(format!("Server is Running. ServerTime is {}", local.format("%Y-%m-%d %H:%M:%S").to_string()))
-}
+#[derive(Serialize)]
+struct server_status {
+    msg: String
+} 
 
+#[get("/checkserver")]
+pub async fn check_server() -> web::Json<server_status>{
+    let local: DateTime<Local> = Local::now();
+    web::Json( server_status{
+        msg: format!("Server is running. Server time is {}", local.format("%Y-%m-%d %H:%M:%S").to_string())
+    })
+}
