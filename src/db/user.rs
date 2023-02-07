@@ -43,7 +43,7 @@ pub struct User {
     pub status: UserStatus,
     password: String,
     hash_salt: String,
-    refresh_jwt: Option<String>,
+    pub refresh_jwt: Option<String>,
 }
 
 impl User {
