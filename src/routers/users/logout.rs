@@ -20,7 +20,7 @@ pub async fn logout_user_api(data: web::Json<logoutReq>) -> Result<web::Json<log
     let userEmail = data.email.clone();
     match find_dbuser(&userEmail).await {
         Ok(_) => {
-            match clear_refresh_jwt(&String::new()).await {
+            match clear_refresh_jwt(&userEmail).await {
                 Ok(()) => {
                     Ok(
                         web::Json(
