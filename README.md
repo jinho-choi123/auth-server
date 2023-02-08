@@ -1,92 +1,295 @@
 # auth-server
 
+## Getting started with Docker(w/o Docker compose)
+use Docker to easily setup authentication server.
 
-
-## Getting started
-
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
-
+1. Docker pull image.
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/jinho-choi123/auth-server.git
-git branch -M main
-git push -uf origin main
+$ docker pull choijinho817/auth-server:latest
+```
+2. Run docker image with following environment variables set.
+```
+$ docker run \
+-e MONGO_URL=##MONGO_URI## \
+-e DB_PWD_SALT1=##RANDOMSALT## \
+-e DB_PWD_SALT2=##RANDOMSALT2## \
+-e JWT_SALT=##RANDOMJWTSALT## \
+-e ACCESS_JWT_LIFETIME=##ACCESS_JWT_LIFETIME(seconds)## \
+-e REFRESH_JWT_LIFETIME=##REFRESH_JWT_LIFETIME(seconds)## \
+-e PORT=##PORT## \
+choijinho817/auth-server:latest
 ```
 
-## Integrate with your tools
+## Getting started with Docker Compose(Recommended)
+1. Docker pull image.
+```
+$ docker pull choijinho817/auth-server:latest
+```
+2. Create .env file. It should be like the following.
+```
+# env variables for database setup
+MONGO_ROOT_USERNAME='@@random username@@'
+MONGO_ROOT_PASSWORD='@@random hash@@'
 
-- [ ] [Set up project integrations](https://gitlab.com/jinho-choi123/auth-server/-/settings/integrations)
+# env variables for auth-server setup
+MONGO_URL='@@mongo db uri@@'
+DB_PWD_SALT1='@@password hash1@@'
+DB_PWD_SALT2='@@password hash2@@'
+JWT_SALT='@@jwt salt@@'
+ACCESS_JWT_LIFETIME='@@access token lifetime in seconds@@'
+REFRESH_JWT_LIFETIME='@@refresh token lifetime in seconds@@'
+PORT='@@service port@@'
+```
+3. Create docker-compose.yml file in the same directory of .env file. The content should look like the following:
+```
+version: '3.8'
 
-## Collaborate with your team
+services:
+  auth_server: 
+    image: choijinho817/auth-server:1.3 ##local custom image https://gitlab.com/-/snippets/2476117
+    container_name: authServer
+    ports: 
+      - 9090:9090
+    environment:
+      - MONGO_URL=${MONGO_URL}
+      - DB_PWD_SALT1=${DB_PWD_SALT1}  
+      - DB_PWD_SALT2=${DB_PWD_SALT2}
+      - JWT_SALT=${JWT_SALT}
+      - ACCESS_JWT_LIFETIME=${ACCESS_JWT_LIFETIME}
+      - REFRESH_JWT_LIFETIME=${REFRESH_JWT_LIFETIME}
+      - PORT=${PORT}
+    networks: 
+      - authNet 
+  mongo:
+    image: mongo 
+    restart: always
+    container_name: mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+    networks: 
+      - authNet 
+  mongo-express:
+    image: mongo-express 
+    restart: always 
+    ports: 
+      - 8081:8081
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=${MONGO_ROOT_USERNAME}
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=${MONGO_ROOT_PASSWORD}
+      - ME_CONFIG_MONGODB_URL=${MONGO_URL}
+    networks: 
+      - authNet
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Automatically merge when pipeline succeeds](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
 
-## Test and Deploy
+networks:
+  authNet:
+    driver: bridge
+```
 
-Use the built-in continuous integration in GitLab.
+## Details about Environment Variables
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+|NAME|Description|Default Value|
+|----|-----------|-------------|
+|MONGO_URL|MONGO DB URI for storing user infos(https://www.mongodb.com/docs/manual/reference/connection-string/)|None|
+|DB_PWD_SALT1|Front padding to user password hash salt. Set to random salt as default|Randomly set as default|
+|DB_PWD_SALT2|Back padding to user password hash salt. Set to random salt as default|Randomly set as default|
+|JWT_SALT|JWT Hash Salt. Set to random salt as default|Randomly set as default|
+|ACCESS_JWT_LIFETIME|Access JWT's lifetime in seconds. Usually 60 minutes. Set to 60 minutes as default.|3600|
+|REFRESH_JWT_LIFETIME|Refresh JWT's lifetime in seconds. Usually 24 hours. Set to 86400 as default.|
+|PORT|Port of container that authentication service is running. Set to 9090 as default|9090|
+|MONGO_ROOT_USERNAME|See https://hub.docker.com/_/mongo for more info|None|
+|MONGO_ROOT_PASSWORD|See https://hub.docker.com/_/mongo for more info|None|
 
-***
+## API Docs
+#### check server status
+<details>
+ <summary><code>GET</code> <code><b>/checkserver</b></code> <code>(get server status and server time)</code></summary>
 
-# Editing this README
+ #### Request Body
+> |name|type|data type|description|
+> |----|----|---------|-----------|
+> |None|None|None|None|
+#### Parameters
+> |name|type|data type|description|
+> |----|----|---------|-----------|
+> |None|None|None|None|
+#### Response
+>|http code|content type|response|
+>|---------|------------|--------|
+> |200|application/json|{"msg": "Server is running. Server time is 2023-02-07 11:49:14"}|
+##### Example cURL
+> ```javascript
+>  curl --location --request GET 'http://localhost:9090/checkserver'
+> ```
+</details>
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thank you to [makeareadme.com](https://www.makeareadme.com/) for this template.
+-----------------------------------------------------------------------------------
 
-## Suggestions for a good README
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+<details>
+ <summary><code>POST</code> <code><b>/users/create</b></code> <code>(create user)</code></summary>
 
-## Name
-Choose a self-explaining name for your project.
+ #### Request Body(application/json)
+> |name|type|description|
+> |----|----|-----------|
+> |email|string|User email|
+> |password|string|User password|
+#### Parameters
+> |name|type|data type|description|
+> |----|----|---------|-----------|
+> |None|None|None|None|
+#### Response
+>|http code|content type|response|
+>|---------|------------|--------|
+> |200|application/json|{"msg":"create user success","email":"test@test.test"}|
+> |500|application/json|{"error":"Duplicate email found. Please check your email"}|
+##### Example cURL
+> ```javascript
+>  curl --location --request POST 'http://localhost:9090/users/create' \
+>   --header 'Content-Type: application/json' \
+>   --data-raw '{
+>      "email": "test@test.test",
+>       "password": "testpassword"
+>     }'
+> ```
+</details>
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+-----------------------
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+<details>
+ <summary><code>DELETE</code> <code><b>/users/delete/:userEmail</b></code> <code>(delete user)</code></summary>
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+ #### Request Body(application/json)
+> |name|type|description|
+> |----|----|-----------|
+> |None|None|None|
+#### Parameters
+> |name|type|data type|description|
+> |----|----|---------|-----------|
+> |userEmail|string|email address|email address of user to delete|
+#### Response
+>|http code|content type|response|
+>|---------|------------|--------|
+> |200|application/json|{"msg":"User deletion success.","email":"test@test.test"}|
+> |404|application/json|{"error":"User not found. Please check your email"}|
+##### Example cURL
+> ```javascript
+>   curl --location --request DELETE 'http://localhost:9090/users/delete/test@test.test' 
+> ```
+</details>
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+-------------------
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+<details>
+ <summary><code>POST</code> <code><b>/users/login</b></code> <code>(login user. get access token and refresh token)</code></summary>
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+ #### Request Body(application/json)
+> |name|type|description|
+> |----|----|-----------|
+> |email|string|user's email|
+> |password|string|user's password|
+#### Parameters
+> |name|type|data type|description|
+> |----|----|---------|-----------|
+> |None|None|None|None|
+#### Response
+>|http code|content type|response|
+>|---------|------------|--------|
+> |200|application/json|{"accessToken":"test.test.test","refreshToken":"test.test.test"}|
+> |404|application/json|{"error":"User does not exist. Please check user email."}|
+##### Example cURL
+> ```javascript
+>   curl --location --request POST 'http://localhost:9090/users/login' \
+>     --header 'Content-Type: application/json' \
+>     --data-raw '{
+>       "email": "test@test.test",
+>       "password": "testpassword"
+>       }'
+> ```
+</details>
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+----------------
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+<details>
+ <summary><code>GET</code> <code><b>/users/logout</b></code> <code>(logout user. Invalidate refresh token)</code></summary>
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+ #### Request Body(application/json)
+> |name|type|description|
+> |----|----|-----------|
+> |email|string|user's email|
+#### Parameters
+> |name|type|data type|description|
+> |----|----|---------|-----------|
+> |None|None|None|None|
+#### Response
+>|http code|content type|response|
+>|---------|------------|--------|
+> |200|application/json|{"msg":"logout success.","email":"test@test.test"}|
+> |404|application/json|{"error":"User does not exist. Failed storing refresh JWT to DB."}|
+##### Example cURL
+> ```javascript
+>   curl --location --request GET 'http://localhost:9090/users/logout' \
+>     --header 'Content-Type: application/json' \
+>     --data-raw '{
+>         "email": "jin@mail.dss"
+>       }'
+> ```
+</details>
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+---------------------------
 
-## License
-For open source projects, say how it is licensed.
+<details>
+ <summary><code>GET</code> <code><b>/jwt/verify</b></code> <code>(verify access token contained in request headers - used as middleware in backend server)</code></summary>
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+#### Request Headers)
+> |name|type|description|
+> |----|----|-----------|
+> |Authorization|string|request headers Authorization field contains access token. It starts with "Bearer". It has white space between "Bearer" and access jwt.|
+#### Request Body(application/json)
+> |name|type|description|
+> |----|----|-----------|
+> |None|None|None|
+#### Parameters
+> |name|type|data type|description|
+> |----|----|---------|-----------|
+> |None|None|None|None|
+#### Response
+>|http code|content type|response|
+>|---------|------------|--------|
+> |200|application/json|{"msg":"verification success. User is authorized.","email":"test@test.test"}|
+> |500|application/json|{"error": "Error occur while decoding jwt."}|
+##### Example cURL
+> ```javascript
+>   curl --location --request GET 'http://localhost:9090/jwt/verify' \
+>     --header 'Authorization: Bearer test.test.test'
+> ```
+</details>
+
+---------------------
+
+<details>
+ <summary><code>POST</code> <code><b>/jwt/refresh</b></code> <code>(convert refresh jwt to access jwt)</code></summary>
+
+#### Request Body(application/json)
+> |name|type|description|
+> |----|----|-----------|
+> |refresh_token|string|refresh jwt|
+#### Parameters
+> |name|type|data type|description|
+> |----|----|---------|-----------|
+> |None|None|None|None|
+#### Response
+>|http code|content type|response|
+>|---------|------------|--------|
+> |200|application/json|{"accessToken":"test.test.test","msg":"refreshing token success."}|
+> |500|application/json|{"error":"Error occur while decoding jwt."}|
+##### Example cURL
+> ```javascript
+>   curl --location --request POST 'http://localhost:9090/jwt/refresh' \
+>     --header 'Content-Type: application/json' \
+>     --data-raw '{
+>         "refresh_token": "test.test.test"
+>       }'
+> ```
+</details>
