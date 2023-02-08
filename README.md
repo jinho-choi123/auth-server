@@ -100,3 +100,196 @@ networks:
 |PORT|Port of container that authentication service is running. Set to 9090 as default|9090|
 |MONGO_ROOT_USERNAME|See https://hub.docker.com/_/mongo for more info|None|
 |MONGO_ROOT_PASSWORD|See https://hub.docker.com/_/mongo for more info|None|
+
+## API Docs
+#### check server status
+<details>
+ <summary><code>GET</code> <code><b>/checkserver</b></code> <code>(get server status and server time)</code></summary>
+
+ #### Request Body
+> |name|type|data type|description|
+> |----|----|---------|-----------|
+> |None|None|None|None|
+#### Parameters
+> |name|type|data type|description|
+> |----|----|---------|-----------|
+> |None|None|None|None|
+#### Response
+>|http code|content type|response|
+>|---------|------------|--------|
+> |200|application/json|{"msg": "Server is running. Server time is 2023-02-07 11:49:14"}|
+##### Example cURL
+> ```javascript
+>  curl --location --request GET 'http://localhost:9090/checkserver'
+> ```
+</details>
+
+-----------------------------------------------------------------------------------
+
+<details>
+ <summary><code>POST</code> <code><b>/users/create</b></code> <code>(create user)</code></summary>
+
+ #### Request Body(application/json)
+> |name|type|description|
+> |----|----|-----------|
+> |email|string|User email|
+> |password|string|User password|
+#### Parameters
+> |name|type|data type|description|
+> |----|----|---------|-----------|
+> |None|None|None|None|
+#### Response
+>|http code|content type|response|
+>|---------|------------|--------|
+> |200|application/json|{"msg":"create user success","email":"test@test.test"}|
+> |500|application/json|{"error":"Duplicate email found. Please check your email"}|
+##### Example cURL
+> ```javascript
+>  curl --location --request POST 'http://localhost:9090/users/create' \
+>   --header 'Content-Type: application/json' \
+>   --data-raw '{
+>      "email": "test@test.test",
+>       "password": "testpassword"
+>     }'
+> ```
+</details>
+
+-----------------------
+
+
+<details>
+ <summary><code>DELETE</code> <code><b>/users/delete/:userEmail</b></code> <code>(delete user)</code></summary>
+
+ #### Request Body(application/json)
+> |name|type|description|
+> |----|----|-----------|
+> |None|None|None|
+#### Parameters
+> |name|type|data type|description|
+> |----|----|---------|-----------|
+> |userEmail|string|email address|email address of user to delete|
+#### Response
+>|http code|content type|response|
+>|---------|------------|--------|
+> |200|application/json|{"msg":"User deletion success.","email":"test@test.test"}|
+> |404|application/json|{"error":"User not found. Please check your email"}|
+##### Example cURL
+> ```javascript
+>   curl --location --request DELETE 'http://localhost:9090/users/delete/test@test.test' 
+> ```
+</details>
+
+-------------------
+
+<details>
+ <summary><code>POST</code> <code><b>/users/login</b></code> <code>(login user. get access token and refresh token)</code></summary>
+
+ #### Request Body(application/json)
+> |name|type|description|
+> |----|----|-----------|
+> |email|string|user's email|
+> |password|string|user's password|
+#### Parameters
+> |name|type|data type|description|
+> |----|----|---------|-----------|
+> |None|None|None|None|
+#### Response
+>|http code|content type|response|
+>|---------|------------|--------|
+> |200|application/json|{"accessToken":"test.test.test","refreshToken":"test.test.test"}|
+> |404|application/json|{"error":"User does not exist. Please check user email."}|
+##### Example cURL
+> ```javascript
+>   curl --location --request POST 'http://localhost:9090/users/login' \
+>     --header 'Content-Type: application/json' \
+>     --data-raw '{
+>       "email": "test@test.test",
+>       "password": "testpassword"
+>       }'
+> ```
+</details>
+
+----------------
+
+<details>
+ <summary><code>GET</code> <code><b>/users/logout</b></code> <code>(logout user. Invalidate refresh token)</code></summary>
+
+ #### Request Body(application/json)
+> |name|type|description|
+> |----|----|-----------|
+> |email|string|user's email|
+#### Parameters
+> |name|type|data type|description|
+> |----|----|---------|-----------|
+> |None|None|None|None|
+#### Response
+>|http code|content type|response|
+>|---------|------------|--------|
+> |200|application/json|{"msg":"logout success.","email":"test@test.test"}|
+> |404|application/json|{"error":"User does not exist. Failed storing refresh JWT to DB."}|
+##### Example cURL
+> ```javascript
+>   curl --location --request GET 'http://localhost:9090/users/logout' \
+>     --header 'Content-Type: application/json' \
+>     --data-raw '{
+>         "email": "jin@mail.dss"
+>       }'
+> ```
+</details>
+
+---------------------------
+
+<details>
+ <summary><code>GET</code> <code><b>/jwt/verify</b></code> <code>(verify access token contained in request headers - used as middleware in backend server)</code></summary>
+
+#### Request Headers)
+> |name|type|description|
+> |----|----|-----------|
+> |Authorization|string|request headers Authorization field contains access token. It starts with "Bearer". It has white space between "Bearer" and access jwt.|
+#### Request Body(application/json)
+> |name|type|description|
+> |----|----|-----------|
+> |None|None|None|
+#### Parameters
+> |name|type|data type|description|
+> |----|----|---------|-----------|
+> |None|None|None|None|
+#### Response
+>|http code|content type|response|
+>|---------|------------|--------|
+> |200|application/json|{"msg":"verification success. User is authorized.","email":"test@test.test"}|
+> |500|application/json|{"error": "Error occur while decoding jwt."}|
+##### Example cURL
+> ```javascript
+>   curl --location --request GET 'http://localhost:9090/jwt/verify' \
+>     --header 'Authorization: Bearer test.test.test'
+> ```
+</details>
+
+---------------------
+
+<details>
+ <summary><code>POST</code> <code><b>/jwt/refresh</b></code> <code>(convert refresh jwt to access jwt)</code></summary>
+
+#### Request Body(application/json)
+> |name|type|description|
+> |----|----|-----------|
+> |refresh_token|string|refresh jwt|
+#### Parameters
+> |name|type|data type|description|
+> |----|----|---------|-----------|
+> |None|None|None|None|
+#### Response
+>|http code|content type|response|
+>|---------|------------|--------|
+> |200|application/json|{"accessToken":"test.test.test","msg":"refreshing token success."}|
+> |500|application/json|{"error":"Error occur while decoding jwt."}|
+##### Example cURL
+> ```javascript
+>   curl --location --request POST 'http://localhost:9090/jwt/refresh' \
+>     --header 'Content-Type: application/json' \
+>     --data-raw '{
+>         "refresh_token": "test.test.test"
+>       }'
+> ```
+</details>
