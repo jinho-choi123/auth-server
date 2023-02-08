@@ -181,7 +181,7 @@ pub async fn clear_refresh_jwt(userEmail: &String) -> Result<(), AppErr> {
 
         },
         None => return Err(AppErr::new(
-            Some("User does not exist. Failed storing refresh JWT to DB.".to_string()),
+            Some("User does not exist. Failed clearing refresh JWT to DB.".to_string()),
             None,
             AppErrType::NotFound_Err,
         ))
